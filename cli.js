@@ -25,9 +25,9 @@ if (args.includes('-v')) verboseMode = true;
 args = args.filter(arg => arg != '-r' && arg != '-v');
 
 // If multiple arguments provided cancel execution. There may be a space in the path provided but no quotes.
-if (args.length > 1) { 
+if (args.length > 1) {
     console.log('You provided too many arguments. Maybe you forgot to add "quotes" around your path?');
-    console.log(useExample);;
+    console.log(useExample);
     process.exit();
 }
 
@@ -41,13 +41,13 @@ if (['help', '-h', '-H', '--help'].includes(serverPath)) {
     process.exit();
 }
 
-// Check if provided path is relative path & convert to absolute path if needed. 
+// Check if provided path is relative path & convert to absolute path if needed.
 if (!serverPath.startsWith(cwd)) serverPath = path.join(cwd, serverPath);
 
 // Validate provided path exists
 if (!fs.existsSync(serverPath)) {
     console.log('The provided path does not exist...');
-    console.log('path: ' + serverPath);;
+    console.log('path: ' + serverPath);
     process.exit();
 }
 
@@ -67,7 +67,7 @@ const addonPath = path.join(serverPath, addonDirectory);
 if (!fs.existsSync(addonPath)) {
     fs.mkdirSync(addonPath);
     console.log('It looks like this may be your first time using bds-addon-installer.');
-    console.log('Place all of you your packs in the addon folder and run the script again.');;
+    console.log('Place all of you your packs in the addon folder and run the script again.');
     console.log('Addon Location: ' + addonPath);
     process.exit();
 }
