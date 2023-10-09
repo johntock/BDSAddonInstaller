@@ -1,4 +1,3 @@
-
 import path from 'path';
 import admZip from 'adm-zip';
 import fs from 'fs-extra';
@@ -46,8 +45,8 @@ export default class BDSAddonInstaller {
 
     /**
      * Prepares to install addons for the provided Bedrock Dedicated Server.
-     * @param {String} providedServerPath - The path to the root directory of the Bedrock Dedicated Server. 
-     * @param {Boolean} verboseMode - Optional parameter for enabling additional logging. 
+     * @param {String} providedServerPath - The path to the root directory of the Bedrock Dedicated Server.
+     * @param {Boolean} verboseMode - Optional parameter for enabling additional logging.
      */
     constructor(providedServerPath, verboseMode) {
         // If verboseMode update logging
@@ -74,21 +73,36 @@ export default class BDSAddonInstaller {
         worldBehaviorsDir = path.join(serverPath, worldBehaviorsDir.replace('<worldname>', worldName));
         serverPacksJsonPath = path.join(serverPath, serverPacksJsonPath);
         serverResourcesDir = path.join(serverPath, serverResourcesDir);
-        serverBehaviorsDir = path.join(serverPath, serverBehaviorsDir); 
+        serverBehaviorsDir = path.join(serverPath, serverBehaviorsDir);
 
         // Create JSON files if they do not exists
         fs.ensureFileSync(serverPacksJsonPath);
         fs.ensureFileSync(worldResourcesJsonPath);
         fs.ensureFileSync(worldBehaviorsJsonPath);
-        
+
         // Read installed packs from JSON files & attempt to parse content.
         let serverPackContents = fs.readFileSync(serverPacksJsonPath);
         let worldResourceContents = fs.readFileSync(worldResourcesJsonPath);
         let worldBehaviorContents = fs.readFileSync(worldBehaviorsJsonPath);
         // If there is an error parsing JSON assume no packs installed and use empty array.
-        try { serverPacksJSON = JSON.parse(serverPackContents) } catch(err) { serverPacksJSON = [] };
-        try { worldResourcesJSON = JSON.parse(worldResourceContents) } catch(err) { worldResourcesJSON = [] };
-        try { worldBehaviorsJSON = JSON.parse(worldBehaviorContents) } catch(err) { worldBehaviorsJSON = [] };
+        try {
+            serverPacksJSON = JSON.parse(serverPackContents)
+        } catch (err) {
+            serverPacksJSON = []
+        }
+        ;
+        try {
+            worldResourcesJSON = JSON.parse(worldResourceContents)
+        } catch (err) {
+            worldResourcesJSON = []
+        }
+        ;
+        try {
+            worldBehaviorsJSON = JSON.parse(worldBehaviorContents)
+        } catch (err) {
+            worldBehaviorsJSON = []
+        }
+        ;
         // If unexpected results from parsing JSON assume no packs installed and use empty array.
         if (!Array.isArray(serverPacksJSON)) serverPacksJSON = [];
         if (!Array.isArray(worldResourcesJSON)) worldResourcesJSON = [];
@@ -102,8 +116,8 @@ export default class BDSAddonInstaller {
     }
 
     /**
-     * Installs the provide addon/pack to the BDS server and the active world. 
-     * @param {String} packPath - The full path to the mcpack or mcaddon file. 
+     * Installs the provide addon/pack to the BDS server and the active world.
+     * @param {String} packPath - The full path to the mcpack or mcaddon file.
      */
     async installAddon(packPath) {
 
@@ -111,12 +125,12 @@ export default class BDSAddonInstaller {
         if (!await fs.exists(packPath)) throw new Error('Unable to install pack. The provided path does not exist. ' + packPath);
         if (!packPath.endsWith('.mcpack') && !packPath.endsWith('.mcaddon')) throw new Error('Unable to install pack. The provided file is not an addon or pack. ' + packPath);
         if (packPath.endsWith('.mcaddon')) {
-            // If the provided pack is an addon extract packs and execute this function again for each one. 
+            // If the provided pack is an addon extract packs and execute this function again for each one.
             let packs = await extractAddonPacks(packPath);
             for (const pack of packs) await this.installAddon(pack);
             return;
         }
-        
+
         // Gather pack details from the manifest.json file
         let manifest = await extractPackManifest(packPath);
         let name = manifest.header.name.replace(/\W/g, '');
@@ -128,7 +142,7 @@ export default class BDSAddonInstaller {
             type = manifest.modules[0].type.toLowerCase();
         } else if (manifest.header.modules) {
             type = manifest.header.modules[0].type.toLowerCase();
-        }else {
+        } else {
             throw new Error('Unable to install pack. Unknown pack manifest format.\n' + packPath);
         }
 
@@ -139,7 +153,7 @@ export default class BDSAddonInstaller {
         if (type == 'resources') {
             installedWorldPack = installedWorldResources.get(uuid);
             installedServerPack = installedServerResources.get(uuid);
-        }else if (type == 'data') {
+        } else if (type == 'data') {
             installedWorldPack = installedWorldBehaviors.get(uuid);
             installedServerPack = installedServerBehaviors.get(uuid)
         }
@@ -152,7 +166,7 @@ export default class BDSAddonInstaller {
             if (upToDate) {
                 log.general(`BDSAddonInstaller - The ${name} pack is already installed and up to date.`);
                 return;
-            }else{
+            } else {
                 // uninstall pack if not up to date
                 log.detail('BDSAddonInstaller - Uninstalling old version of pack');
                 if (installedServerPack) await uninstallServerPack(uuid, installedServerPack.location);
@@ -178,19 +192,19 @@ export default class BDSAddonInstaller {
         // Read all packs & addons from BDS-Addon directory.
         let packs = await fs.readdir(addonPath);
 
-        // Get the full path of each addon/pack and install it. 
+        // Get the full path of each addon/pack and install it.
         for (let pack of packs) {
             try {
                 let location = path.join(addonPath, pack);
                 await this.installAddon(location);
-            }catch(err) {
+            } catch (err) {
                 log.error('BDSAddonInstaller - ' + err);
             }
         }
     }
 
     /**
-     * Updates the simple logger to use the provided configuration. 
+     * Updates the simple logger to use the provided configuration.
      * Reference the readme for configuration options.
      * https://github.com/chegele/Logger
      * @param {Logger.Options} logConfig - An object with the logging configuration
@@ -206,7 +220,7 @@ export default class BDSAddonInstaller {
 /**
  * Installs the provided pack to the world and Bedrock Dedicated Server.
  * @param {String} packPath - The path to the pack to be installed.
- * @param {Object} manifest - The pre-parsed manifest information for the pack. 
+ * @param {Object} manifest - The pre-parsed manifest information for the pack.
  */
 async function installPack(packPath, manifest) {
     // Extract manifest information
@@ -219,36 +233,36 @@ async function installPack(packPath, manifest) {
         type = manifest.modules[0].type.toLowerCase();
     } else if (manifest.header.modules) {
         type = manifest.header.modules[0].type.toLowerCase();
-    }else {
+    } else {
         throw new Error('Unable to install pack. Unknown pack manifest format.\n' + packPath);
     }
 
-    // Create placeholder variables for pack installation paths. 
+    // Create placeholder variables for pack installation paths.
     let installServerPath, installWorldPath, WorldPacksJSON, WorldPacksPath, rawPath = null;
 
     // Update variables based on the pack type.
-    if (type == 'data') {
+    if (type == 'data' || type === 'script') {
         installServerPath = path.join(serverBehaviorsDir, name);
         installWorldPath = path.join(worldBehaviorsDir, name);
         WorldPacksJSON = worldBehaviorsJSON;
         WorldPacksPath = worldBehaviorsJsonPath;
         rawPath = 'behavior_packs/' + name;
-    }else if (type == 'resources') {
+    } else if (type == 'resources') {
         installServerPath = path.join(serverResourcesDir, name);
         installWorldPath = path.join(worldResourcesDir, name);
         WorldPacksJSON = worldResourcesJSON;
         WorldPacksPath = worldResourcesJsonPath;
         rawPath = 'resource_packs/' + name;
-    }else {
+    } else {
         throw new Error('Unknown pack type, ' + type);
     }
-    
+
     // Install pack to the world.
     let worldPackInfo = {'pack_id': uuid, "version": version}
     WorldPacksJSON.unshift(worldPackInfo);
     await promiseExtract(packPath, installWorldPath);
     await fs.writeFile(WorldPacksPath, JSON.stringify(WorldPacksJSON, undefined, 2));
-    
+
     // Install pack to the server.
     version = `${version[0]}.${version[1]}.${version[2]}`;
     let serverPackInfo = {"file_system": "RawPath", "path": rawPath, "uuid": uuid, "version": version};
@@ -261,11 +275,11 @@ async function installPack(packPath, manifest) {
  * Uninstall all resource and behavior packs from the Minecraft world.
  * If the server also has the pick it will also be uninstalled.
  * NOTE: Vanilla packs can't be safely removed from the server packs & there is no way to differentiate vanilla and added packs.
- * NOTE: This is why only packs found installed to the world will be removed from the server.  
+ * NOTE: This is why only packs found installed to the world will be removed from the server.
  */
 async function uninstallAllWorldPacks() {
     log.general('BDSAddonInstaller - Uninstalling all packs found saved to world.');
-    
+
     // Uninstall all cached world resource packs.
     for (let pack of installedWorldResources.values()) {
         await uninstallWorldResource(pack.uuid, pack.location);
@@ -281,21 +295,21 @@ async function uninstallAllWorldPacks() {
     }
 
     // All packs are cached by the constructor.
-    // Reload world packs after uninstall. 
+    // Reload world packs after uninstall.
     installedServerResources = mapInstalledPacks(serverResourcesDir);
     installedServerBehaviors = mapInstalledPacks(serverBehaviorsDir);
     installedWorldResources = mapInstalledPacks(worldResourcesDir);
     installedWorldBehaviors = mapInstalledPacks(worldBehaviorsDir);
 }
 
-// TODO: uninstallWorldResource, uninstallWorldBehavior, and uninstallServerPack share the same logic. 
-// These functions can be merged into one function using an additional argument for pack type. 
+// TODO: uninstallWorldResource, uninstallWorldBehavior, and uninstallServerPack share the same logic.
+// These functions can be merged into one function using an additional argument for pack type.
 
 /**
- * Uninstalls the pack from the world_resource_packs.json by uuid & deletes the provided pack path. 
- * @param {String} uuid - The id of the pack to remove from the world_resource_packs.json file. 
+ * Uninstalls the pack from the world_resource_packs.json by uuid & deletes the provided pack path.
+ * @param {String} uuid - The id of the pack to remove from the world_resource_packs.json file.
  * @param {String} location - The path to the root directory of the installed pack to be deleted.
- * WARNING: No validation is done to confirm that the provided path is a pack. 
+ * WARNING: No validation is done to confirm that the provided path is a pack.
  */
 async function uninstallWorldResource(uuid, location) {
     // Locate the pack in the manifest data.
@@ -316,10 +330,10 @@ async function uninstallWorldResource(uuid, location) {
 }
 
 /**
- * Uninstalls the pack from the world_behavior_packs.json by uuid & deletes the provided pack path. 
- * @param {String} uuid - The id of the pack to remove from the world_behavior_packs.json file. 
+ * Uninstalls the pack from the world_behavior_packs.json by uuid & deletes the provided pack path.
+ * @param {String} uuid - The id of the pack to remove from the world_behavior_packs.json file.
  * @param {String} location - The path to the root directory of the installed pack to be deleted.
- * WARNING: No validation is done to confirm that the provided path is a pack. 
+ * WARNING: No validation is done to confirm that the provided path is a pack.
  */
 async function uninstallWorldBehavior(uuid, location) {
     // Locate the pack in the manifest data.
@@ -340,12 +354,12 @@ async function uninstallWorldBehavior(uuid, location) {
 }
 
 /**
- * Uninstalls the pack from the valid_known_packs.json by uuid & deletes the provided pack path. 
- * @param {String} uuid - The id of the pack to remove from the valid_known_packs.json file. 
+ * Uninstalls the pack from the valid_known_packs.json by uuid & deletes the provided pack path.
+ * @param {String} uuid - The id of the pack to remove from the valid_known_packs.json file.
  * @param {String} location - The path to the root directory of the installed pack to be deleted.
- * WARNING: No validation is done to confirm that the provided path is a pack.  
+ * WARNING: No validation is done to confirm that the provided path is a pack.
  */
-async function uninstallServerPack (uuid, location) {
+async function uninstallServerPack(uuid, location) {
     // Locate the pack in the manifest data.
     let packIndex = findIndexOf(serverPacksJSON, 'uuid', uuid);
 
@@ -356,7 +370,7 @@ async function uninstallServerPack (uuid, location) {
         log.detail(`BDSAddonInstaller - Removed ${uuid} from server packs JSON.`);
     }
 
-    // Delete the provided pack path. 
+    // Delete the provided pack path.
     if (await fs.exists(location)) {
         await fs.remove(location);
         log.detail(`BDSAddonInstaller - Removed ${location}`);
@@ -368,7 +382,7 @@ async function uninstallServerPack (uuid, location) {
 
 /**
  * Extracts bundled packs from the provided addon file.
- * This will only need to be ran once on an addon as it will convert the addon to multiple .mcpack files. 
+ * This will only need to be ran once on an addon as it will convert the addon to multiple .mcpack files.
  * @param {String} addonPath - The path of the addon file to extract packs from.
  */
 async function extractAddonPacks(addonPath) {
@@ -377,7 +391,7 @@ async function extractAddonPacks(addonPath) {
     if (!addonPath.endsWith('.mcaddon')) throw new Error('Unable to extract packs from addon. The provided file is not an addon. ' + addonPath);
     log.detail('BDSAddonInstaller - Extracting packs from ' + addonPath);
 
-    // Extract file path and name info for saving the extracted packs. 
+    // Extract file path and name info for saving the extracted packs.
     let addonName = path.basename(addonPath).replace('.mcaddon', '');
     let dirPath = path.dirname(addonPath);
 
@@ -391,7 +405,7 @@ async function extractAddonPacks(addonPath) {
     for (let pack of packs) {
         log.detail(`BDSAddonInstaller - Extracting ${pack} from ${addonName}.`);
 
-        // If the mcpack is already packaged, move the file. 
+        // If the mcpack is already packaged, move the file.
         if (pack.endsWith('.mcpack')) {
             let packName = addonName + '_' + pack;
             let packFile = path.join(tempLocation, pack);
@@ -399,7 +413,7 @@ async function extractAddonPacks(addonPath) {
             await fs.move(packFile, packDestination);
             results.push(packDestination);
             log.detail('BDSAddonInstaller - Extracted ' + packDestination);
-        }else {
+        } else {
             // The pack still needs to be zipped and then moved.
             let packName = addonName + '_' + pack + '.mcpack';
             let packFolder = path.join(tempLocation, pack);
@@ -411,7 +425,8 @@ async function extractAddonPacks(addonPath) {
     }
 
     // Remove temporary files and old addon.
-    await fs.remove(path.join(dirPath, 'tmp/'));;
+    await fs.remove(path.join(dirPath, 'tmp/'));
+    ;
     await fs.unlink(addonPath);
 
     // Return an array of paths to the extracted packs.
@@ -433,7 +448,7 @@ function extractPackManifest(packPath) {
     let archive = new admZip(packPath);
     let manifest = archive.getEntries().filter(entry => entry.entryName.endsWith('manifest.json') || entry.entryName.endsWith('pack_manifest.json'));
     if (!manifest[0]) throw new Error('Unable to extract manifest file. It does not exist in this pack. ' + packPath);
-    
+
     // Read the manifest and return the parsed JSON.
     return JSON.parse(stripJsonComments(archive.readAsText(manifest[0].entryName)));
 }
@@ -458,12 +473,12 @@ function readWorldName() {
  * Collects manifest information from all installed packs in provided location.
  * @param {String} directory - The path to the directory containing extracted/installed packs.
  * @returns {Map<PackData>} A collection of manifest information with the uuid as the key.
- * 
+ *
  * Bug Note:
  * Some of the vanilla packs are installed multiple times using the same uuid but different versions.
  * This causes the map to only capture the last read pack with that uuid.
- * This bug should not impact the installer, as there wont be a need to install / update vanilla packs. 
- * 
+ * This bug should not impact the installer, as there wont be a need to install / update vanilla packs.
+ *
  * NOTE: This function is Synchronous for use in the constructor without need for a callback.
  */
 
@@ -502,7 +517,7 @@ function mapInstalledPacks(directory) {
         let name = manifest.header.name;
         let version = manifest.header.version;
         if (!version) version = manifest.header.modules[0].version;
-        results.set(uuid, {name, uuid, version, location}); 
+        results.set(uuid, {name, uuid, version, location});
     });
     return results;
 }
@@ -511,11 +526,11 @@ function mapInstalledPacks(directory) {
 // Misc helper functions
 
 /**
- * Finds the first index of a key value pair from an array of objects. 
- * @param {Object[]} objectArray - An array of objects to search. 
+ * Finds the first index of a key value pair from an array of objects.
+ * @param {Object[]} objectArray - An array of objects to search.
  * @param {String} key - The key to match the value against.
- * @param {*} value - The value to find the index of. 
- * @returns {Number} - The index of the key value pair or -1. 
+ * @param {*} value - The value to find the index of.
+ * @returns {Number} - The index of the key value pair or -1.
  */
 function findIndexOf(objectArray, key, value) {
     for (let index = 0; index < objectArray.length; index++) {
@@ -525,12 +540,12 @@ function findIndexOf(objectArray, key, value) {
 }
 
 /**
- * Extracts all of the contents from a provided .zip archive. 
+ * Extracts all of the contents from a provided .zip archive.
  * @param {String} file - The file to extract the contents from.
- * @param {String} destination - The directory to unzip the contents into. 
+ * @param {String} destination - The directory to unzip the contents into.
  */
 function promiseExtract(file, destination) {
-    return new Promise(function(resolve, reject) {
+    return new Promise(function (resolve, reject) {
         let archive = new admZip(file);
         archive.extractAllToAsync(destination, true, err => {
             if (err) return reject(err);
@@ -541,11 +556,11 @@ function promiseExtract(file, destination) {
 
 /**
  * Compresses contents of the provided folder using ADM Zip.
- * @param {String} folder - The folder containing folder containing the files to compress. 
- * @param {String} destinationFile - The file to save the archive as.  
+ * @param {String} folder - The folder containing folder containing the files to compress.
+ * @param {String} destinationFile - The file to save the archive as.
  */
 function promiseZip(folder, destinationFile) {
-    return new Promise(async function(resolve, reject) {
+    return new Promise(async function (resolve, reject) {
         let archive = new admZip();
         let contents = await fs.readdir(folder);
         for (let file of contents) {
@@ -561,7 +576,7 @@ function promiseZip(folder, destinationFile) {
 }
 
 /**
- * Attempt to locate the subdirectory containing one of the provided file names. 
+ * Attempt to locate the subdirectory containing one of the provided file names.
  * @param {String[]} filenames - The name of files to search for.
  * @param {String} directory - The directory to search in.
  * @returns {String} The path to the first folder containing one of the files or null.
@@ -574,7 +589,7 @@ function findFilesSync(filenames, directory) {
         if (filenames.includes(file)) return directory;
     }
 
-    // If unable to find one of the files, check subdirectories. 
+    // If unable to find one of the files, check subdirectories.
     for (let subDir of contents) {
         let dirPath = path.join(directory, subDir);
         let stat = fs.statSync(dirPath);
@@ -584,18 +599,18 @@ function findFilesSync(filenames, directory) {
         }
     }
 
-    // Unable to find the files. 
+    // Unable to find the files.
     return null;
 }
 
 
-//TODO: Add type definitions for the manifest files. 
+//TODO: Add type definitions for the manifest files.
 
 /**
  * @typedef {Object} PackData - Information extracted from an installed pack.
  * @property {String} name - The name found in the packs manifest.json file.
  * @property {String} uuid - The uuid found in the packs manifest.json file.
  * @property {String} version - the version found in the packs manifest.json fle.
- * @property {String} location - The full path to the root directory of the installed pack. 
+ * @property {String} location - The full path to the root directory of the installed pack.
  * Used by the mapInstalledPacks function
  */
